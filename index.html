@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="firebase.js" type="module"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script>
+      AFRAME.registerComponent("ar-shadows", {
+        // Swap an object's material to a transparent shadows-only material while
+        // in AR mode. Intended for use with a ground plane. The object is also
+        // set visible while in AR mode, this is useful if it's hidden in other
+        // modes due to them using a 3D environment.
+        schema: {
+          opacity: { default: 0.3 }
+        },
+        init: function() {
+          this.el.sceneEl.addEventListener("enter-vr", ev => {
+            this.wasVisible = this.el.getAttribute("visible");
+            if (this.el.sceneEl.is("ar-mode")) {
+              this.savedMaterial = this.el.object3D.children[0].material;
+              this.el.object3D.children[0].material = new THREE.ShadowMaterial();
+              this.el.object3D.children[0].material.opacity = this.data.opacity;
+              this.el.setAttribute("visible", true);
+            }
+          });
+          this.el.sceneEl.addEventListener("exit-vr", ev => {
+            if (this.savedMaterial) {
+              this.el.object3D.children[0].material = this.savedMaterial;
+              this.savedMaterial = null;
+            }
+            if (!this.wasVisible) this.el.setAttribute("visible", false);
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene embedded arjs="sourceType: webcam;"
+             renderer="logarithmicDepthBuffer: true;"
+             vr-mode-ui="enabled: false;">
+      <a-assets>
+        <a-asset-item id="logo" src="logo4.gltf"></a-asset-item>
+      </a-assets>
+
+      <a-nft
+        type="nft"
+        url="./nft/logotarget"
+             smooth="true"
+      smoothCount="10"
+      smoothTolerance=".01"
+      smoothThreshold="5"
+      >
+        <a-entity id="ar-logo" position="0 0 -5" scale=".1 .1 .1">
+          <a-entity
+            gltf-model="#logo"
+            animation-mixer
+            position="0 2.15 0"
+            shadow="cast: true; receive: false"
+          >
+          </a-entity>
+        </a-entity>
+      </a-nft>
+
+      <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
+      <a-light
+        type="directional"
+        light="castShadow: true;
+                      shadowMapHeight: 1024;
+                      shadowMapWidth: 1024;
+                      shadowCameraLeft: -7;
+                      shadowCameraRight: 5;
+                      shadowCameraBottom: -5;
+                      shadowCameraTop: 5;"
+        id="light"
+        target="#ar-logo"
+        position="-5 3 1.5"
+      ></a-light>
+
+      <!-- This shadow-receiving plane is only visible in AR mode. -->
+      <a-plane
+        height="15"
+        width="15"
+        position="0 0 -3"
+        rotation="-90 0 0"
+        shadow="receive: true"
+        ar-shadows="opacity: 0.3"
+        visible="false"
+      ></a-plane>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+  </body>
+</html>
